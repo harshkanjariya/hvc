@@ -1,24 +1,7 @@
-#include<iostream>
-#include "llvm/Support/FileSystem.h"
+#include <iostream>
+#include "crypto_functions.cpp"
+#include "functions.cpp"
 
-using namespace std;
-
-void printMenu() {
-	cout<<"Available commands:"<<endl;
-	cout<<"\tadd <file/folder>\t\t: Add file/folder to commit"<<endl;
-	cout<<"\tcommit <message>\t\t: Commit the changes to repo"<<endl;
-}
-
-void add(string path) {
-	cout<<"adding:"<<path<<endl;
-	for (directory_iterator itr(path); itr != end_itr; ++itr) {
-		cout<<itr->path()<<endl;
-	}
-}
-
-void commit(string message) {
-	cout<<"commiting:"<<message;
-}
 
 void parseCommands(string command, int argc, string args[]) {
 	if (command == "add") {
