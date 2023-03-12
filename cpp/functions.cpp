@@ -1,6 +1,10 @@
 #include <filesystem>
 #include <algorithm>
+#include <fstream>
+#include <vector>
+#include <zlib.h>
 
+using namespace std;
 namespace fs = std::filesystem;
 
 void printMenu() {
@@ -9,10 +13,45 @@ void printMenu() {
 	cout<<"\tcommit <message>\t\t: Commit the changes to repo"<<endl;
 }
 
+bool isCompressable(string content) {
+	const char* s = content.c_str();
+	for (int i = 0; i < content.size(); ++i) {
+		if (s[i] & 0x80) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool isVectorCompressable(vector<char> v) {
+	for (int i = 0; i < v.size(); ++i) {
+		if (v[i] & 0x80) {
+			return false;
+		}
+	}
+	return true;
+}
+vector<char> compressVector(vector<char> v) {
+	vector<char> compressed;
+	return compressed;
+}
+
 void addFileToObjects(string path) {
-	cout<<"adding="<<path<<endl;
-	string hash = sha256(path);
-	cout<<"hash="<<hash<<endl;
+	ifstream stagedIn("./.hvc/staged", ios::binary);
+	vector<unsigned char> buf(istreambuf_iterator<char>(stagedIn), {});
+	stagedIn.close();
+
+	string s(buf.begin(), buf.end());
+
+	ifstream file(path, ios::binary);
+	vector<unsigned char> fileBuf(istreambuf_iterator<char>(file), {});
+
+	ofstream stagedOut("./.hvc/staged", ios::binary);
+	if (s.size() == 0) {
+		// stagedOut.write();
+	}
+	// string hash = sha256(path);
+	// cout<<"hash="<<hash<<endl;
 }
 
 void add(string pathStr) {
