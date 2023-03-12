@@ -5,6 +5,8 @@ import (
 )
 
 func main() {
+	validateHVCTree()
+
 	args := os.Args[1:]
 	if len(args) < 1 {
 		printMenu()
@@ -25,6 +27,11 @@ func main() {
 			commit(args[1])
 		}
 		break
+	case "status":
+		status()
+		break
+	case "log":
+		log()
 	default:
 		printMenu()
 	}
