@@ -2,7 +2,15 @@ package main
 
 var filesToIgnore = []string{".hvc", ".hvcignore", ".hvcmodules"}
 
+const binaryContentSeparator = "<SEPARATOR>"
+
 const rootPath = "./.hvc"
+
+const configFilePath = ".hvcrc"
+
+const headFileName = rootPath + "/HEAD"
+
+const headsFolder = rootPath + "/heads"
 
 const stageFileName = rootPath + "/staged"
 

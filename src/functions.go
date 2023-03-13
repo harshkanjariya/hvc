@@ -1,12 +1,10 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func addFileToStage(path string) {
@@ -46,28 +44,30 @@ func printMenu() {
 	println("\tcommit <message>\t\t: Commit the changes to repo")
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
+func validateFolder(path string) {
+	_, errStat := os.Stat(path)
+	if os.IsNotExist(errStat) {
+		err := os.MkdirAll(path, defaultFilePermission)
+		check(err)
+	}
+}
+
+func validateFile(path string) {
+	_, errStat := os.Stat(path)
+	if os.IsNotExist(errStat) {
+		_, err := os.Create(path)
+		check(err)
 	}
 }
 
 func validateHVCTree() {
-	_, errStat := os.Stat(stageFileName)
-	if os.IsNotExist(errStat) {
-		_, err := os.Create(stageFileName)
-		check(err)
-	}
-	_, errStat = os.Stat(commitFileName)
-	if os.IsNotExist(errStat) {
-		_, err := os.Create(commitFileName)
-		check(err)
-	}
-	_, errStat = os.Stat(objectsFolder)
-	if os.IsNotExist(errStat) {
-		err := os.MkdirAll(objectsFolder, defaultFilePermission)
-		check(err)
-	}
+	validateFile(stageFileName)
+	validateFile(commitFileName)
+	validateFolder(objectsFolder)
+	validateFolder(addFilesFolder)
+
+	validateFile(headFileName)
+	validateFolder(headsFolder)
 }
 
 func getStagedContent() map[string]string {
@@ -166,27 +166,55 @@ func generateCommit(message string, parentHash *string) Commit {
 	return c
 }
 
-func generateHash(str string) string {
-	hasher := sha256.New()
-	hasher.Write([]byte(str))
-	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return sha
-}
+func getConfig() map[string]string {
+	ex, err2 := os.Executable()
+	check(err2)
+	exPath := filepath.Dir(ex)
+	content, err := os.ReadFile(exPath + "/" + configFilePath)
+	check(err)
 
-func getCurrentUser() string {
-	return "Harsh Kanjariya"
-}
+	var conf = make(map[string]string)
 
-func currentMillis() int64 {
-	return time.Now().UnixNano() / int64(time.Millisecond)
-}
-
-func countRune(s string, r rune) int {
-	count := 0
-	for _, c := range s {
-		if c == r {
-			count++
+	for _, line := range strings.Split(string(content), "\n") {
+		if len(line) > 0 && strings.Contains(line, "=") {
+			parts := strings.Split(line, "=")
+			conf[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
 		}
 	}
-	return count
+
+	_, exists := conf["defaultBranch"]
+	if !exists {
+		conf["defaultBranch"] = "master"
+	}
+
+	return conf
+}
+
+func updateHead(content string) {
+	head, err := os.ReadFile(headFileName)
+	check(err)
+	headStr := strings.TrimSpace(string(head))
+	if strings.Contains(headStr, ":") {
+		headStr = strings.Split(headStr, ":")[1]
+	} else {
+		// TODO
+	}
+	err = os.WriteFile(headsFolder+"/"+headStr, []byte(content), defaultFilePermission)
+	check(err)
+}
+func getHead() string {
+	head, err := os.ReadFile(headFileName)
+	check(err)
+	headStr := strings.TrimSpace(string(head))
+	if strings.Contains(headStr, ":") {
+		headStr = strings.Split(headStr, ":")[1]
+	} else {
+		return headStr
+	}
+	target, err2 := os.ReadFile(headsFolder + "/" + headStr)
+	check(err2)
+	return strings.TrimSpace(string(target))
+}
+
+func test() {
 }

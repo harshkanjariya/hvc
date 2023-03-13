@@ -32,6 +32,13 @@ func main() {
 		break
 	case "log":
 		log()
+		break
+	case "init":
+		initialize()
+		break
+	case "test":
+		test()
+		break
 	default:
 		printMenu()
 	}

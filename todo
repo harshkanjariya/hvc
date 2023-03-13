@@ -1,3 +1,5 @@
 getCurrentUser function
 string to byte array everywhere
 getCommits existing commits condition
+remove test function
+add commit if old commits exists situation

@@ -45,8 +45,9 @@ func commit(message string) {
 	}
 
 	var commits = getCommits()
+	var newCommit Commit
 	if len(commits) == 0 {
-		commit := generateCommit(message, nil)
+		newCommit = generateCommit(message, nil)
 
 		addContent := ""
 		var files []CommitFile
@@ -58,8 +59,8 @@ func commit(message string) {
 				action: CommitFileActionAdd,
 			})
 		}
-		commit.files = files
-		addFilePath := addFilesFolder + "/" + commit.hash[:2]
+		newCommit.files = files
+		addFilePath := addFilesFolder + "/" + newCommit.hash[:2]
 		if _, err := os.Stat(addFilePath); err != nil {
 			if os.IsNotExist(err) {
 				err := os.MkdirAll(addFilePath, defaultFilePermission)
@@ -68,12 +69,18 @@ func commit(message string) {
 				check(err)
 			}
 		}
-		addFilePath += "/" + commit.hash[2:]
+		addFilePath += "/" + newCommit.hash[2:]
 		err := os.WriteFile(addFilePath, []byte(addContent), defaultFilePermission)
 		check(err)
-		commits = append(commits, commit)
+		commits = append(commits, newCommit)
+	} else {
+		parentCommitHash := getHead()
+		println(parentCommitHash)
 	}
 	saveCommits(commits)
+	updateHead(newCommit.hash)
+	err := os.WriteFile(stageFileName, []byte(""), defaultFilePermission)
+	check(err)
 }
 
 func status() {
@@ -87,4 +94,18 @@ func status() {
 func log() {
 	commits := getCommits()
 	fmt.Println(commits)
+}
+
+func initialize() {
+	stats, err := os.Stat(headFileName)
+	if err == nil && stats.Size() > 0 {
+		println("hvc already exists")
+		return
+	}
+	validateHVCTree()
+	config := getConfig()
+	err = os.WriteFile(headFileName, []byte("h:"+config["defaultBranch"]), defaultFilePermission)
+	check(err)
+	_, err2 := os.Create(headsFolder + "/" + config["defaultBranch"])
+	check(err2)
 }
