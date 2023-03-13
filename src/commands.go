@@ -49,11 +49,20 @@ func commit(message string) {
 	if len(commits) == 0 {
 		newCommit = generateCommit(message, nil)
 
-		addContent := ""
+		bytesToAdd := make([]byte, 0)
+		isFirstLine := true
 		var files []CommitFile
 		for file, content := range tree {
-			addContent += strconv.Itoa(countRune(content, '\n')+1) + "\n"
-			addContent += content + "\n"
+			decompressed := decompressData(content)
+
+			firstLine := strconv.Itoa(countRune(string(decompressed), '\n')+1) + "\n"
+			compressed := compressData(append([]byte(firstLine), content...))
+
+			if !isFirstLine {
+				bytesToAdd = append(bytesToAdd, []byte(binaryContentSeparator)...)
+			}
+			bytesToAdd = append(bytesToAdd, compressed...)
+			isFirstLine = false
 			files = append(files, CommitFile{
 				path:   file,
 				action: CommitFileActionAdd,
@@ -70,7 +79,7 @@ func commit(message string) {
 			}
 		}
 		addFilePath += "/" + newCommit.hash[2:]
-		err := os.WriteFile(addFilePath, []byte(addContent), defaultFilePermission)
+		err := os.WriteFile(addFilePath, bytesToAdd, defaultFilePermission)
 		check(err)
 		commits = append(commits, newCommit)
 	} else {
@@ -86,7 +95,7 @@ func commit(message string) {
 func status() {
 	stagedContent := getStagedContent()
 	println("File changes added to stage")
-	for file, _ := range stagedContent {
+	for file := range stagedContent {
 		println("\t" + color.Green + file)
 	}
 }

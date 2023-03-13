@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-func main() {
+func main2() {
 	validateHVCTree()
 
 	args := os.Args[1:]
@@ -35,9 +35,6 @@ func main() {
 		break
 	case "init":
 		initialize()
-		break
-	case "test":
-		test()
 		break
 	default:
 		printMenu()

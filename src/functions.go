@@ -7,6 +7,30 @@ import (
 	"strings"
 )
 
+func saveStageFile(data map[string][]byte) {
+	err := os.WriteFile(stageFileName, []byte(""), defaultFilePermission)
+	check(err)
+	file, err2 := os.OpenFile(stageFileName, os.O_APPEND|os.O_WRONLY, defaultFilePermission)
+	check(err2)
+
+	names := ""
+	isFirstName := true
+	for name := range data {
+		if !isFirstName {
+			names += "\n"
+		}
+		names += name
+		isFirstName = false
+	}
+	_, err3 := file.Write(compressData([]byte(names)))
+	check(err3)
+	for _, content := range data {
+		_, err := file.Write([]byte(binaryContentSeparator))
+		check(err)
+		_, err = file.Write(content)
+		check(err)
+	}
+}
 func addFileToStage(path string) {
 	if path[:2] == "./" {
 		path = path[2:]
@@ -19,23 +43,11 @@ func addFileToStage(path string) {
 
 	var compressed = compressData(content)
 
-	var stagedTree = getStagedContent()
+	var stageMap = getStagedContent()
 
-	if len(stagedTree) == 0 {
-		finalBytes := append([]byte("file:"+path+"\n"), compressed...)
-		err = os.WriteFile(stageFileName, finalBytes, defaultFilePermission)
-		check(err)
-	} else {
-		stagedTree[path] = string(compressed)
+	stageMap[path] = compressed
 
-		var bytes []byte
-		for key, value := range stagedTree {
-			bytes = append(bytes, []byte("file:"+key+"\n")...)
-			bytes = append(bytes, []byte(value)...)
-		}
-		err = os.WriteFile(stageFileName, bytes, defaultFilePermission)
-		check(err)
-	}
+	saveStageFile(stageMap)
 }
 
 func printMenu() {
@@ -70,18 +82,18 @@ func validateHVCTree() {
 	validateFolder(headsFolder)
 }
 
-func getStagedContent() map[string]string {
+func getStagedContent() map[string][]byte {
 	stagedContent, err2 := os.ReadFile(stageFileName)
 	check(err2)
 
-	var tree = make(map[string]string)
+	var tree = make(map[string][]byte)
 	if len(stagedContent) < 0 {
 		return tree
 	}
-	res1 := strings.Split(string(stagedContent), "file:")
-	for _, data := range res1[1:] {
-		content := strings.SplitN(data, "\n", 2)
-		tree[content[0]] = content[1]
+	separatedStage := splitBytes(stagedContent, binaryContentSeparator)
+	names := strings.Split(string(decompressData(separatedStage[0])), "\n")
+	for index, name := range names {
+		tree[name] = separatedStage[index+1]
 	}
 	return tree
 }
@@ -214,7 +226,4 @@ func getHead() string {
 	target, err2 := os.ReadFile(headsFolder + "/" + headStr)
 	check(err2)
 	return strings.TrimSpace(string(target))
-}
-
-func test() {
 }
